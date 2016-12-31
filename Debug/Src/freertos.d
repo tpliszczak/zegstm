@@ -52,7 +52,8 @@ Src/freertos.o: ../Src/freertos.c \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/usbd_conf.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/usart.h \
- F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/tim.h
+ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/tim.h \
+ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/rtc.h
 
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 
@@ -161,3 +162,5 @@ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/usbd_conf.h:
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/usart.h:
 
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/tim.h:
+
+F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/rtc.h:

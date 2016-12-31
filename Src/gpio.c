@@ -61,12 +61,20 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(DE_GPIO_Port, DE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, A_Pin|B_Pin|C_Pin|D_Pin 
+                          |E_Pin|F_Pin|G_Pin|DP_Pin 
+                          |DE_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, A1_Pin|A2_Pin|A10_Pin|A11_Pin 
+                          |A12_Pin|A3_Pin|A4_Pin|A5_Pin 
+                          |A6_Pin|A7_Pin|A8_Pin|A9_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PtPin */
   GPIO_InitStruct.Pin = LED_Pin;
@@ -74,11 +82,25 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PtPin */
-  GPIO_InitStruct.Pin = DE_Pin;
+  /*Configure GPIO pins : PAPin PAPin PAPin PAPin 
+                           PAPin PAPin PAPin PAPin 
+                           PAPin */
+  GPIO_InitStruct.Pin = A_Pin|B_Pin|C_Pin|D_Pin 
+                          |E_Pin|F_Pin|G_Pin|DP_Pin 
+                          |DE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(DE_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PBPin PBPin PBPin PBPin 
+                           PBPin PBPin PBPin PBPin 
+                           PBPin PBPin PBPin PBPin */
+  GPIO_InitStruct.Pin = A1_Pin|A2_Pin|A10_Pin|A11_Pin 
+                          |A12_Pin|A3_Pin|A4_Pin|A5_Pin 
+                          |A6_Pin|A7_Pin|A8_Pin|A9_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 

@@ -42,12 +42,16 @@
 
 /* USER CODE BEGIN Includes */
 
+#include "FreeRTOS.h"
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
-
+uint32_t count;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+
+
 
 /* USER CODE END PV */
 
@@ -70,6 +74,8 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
+
+
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -88,9 +94,10 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
+  MX_USART3_UART_Init();
 
   /* USER CODE BEGIN 2 */
-
+  HAL_TIM_Base_Start_IT(&htim3);
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in freertos.c) */
@@ -177,13 +184,16 @@ void SystemClock_Config(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 /* USER CODE BEGIN Callback 0 */
-
 /* USER CODE END Callback 0 */
   if (htim->Instance == TIM1) {
     HAL_IncTick();
   }
 /* USER CODE BEGIN Callback 1 */
+  if (htim->Instance == TIM3) {
+	  flagaKoncaRxt = 1;
+	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 
+  }
 /* USER CODE END Callback 1 */
 }
 
@@ -198,6 +208,7 @@ void Error_Handler(void)
   /* User can add his own implementation to report the HAL error return state */
   while(1) 
   {
+	  break;
   }
   /* USER CODE END Error_Handler */ 
 }
