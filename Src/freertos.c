@@ -64,6 +64,7 @@ RTC_TimeTypeDef getTime;
 RTC_DateTypeDef getDate;
 uint8_t blueRxFrame[256], blueTxFrame[256], Rx_data[256], txDone, Rx_indx;
 
+uint32_t sciemniacz = 0;  //80noc 50 srednio 0 reszta
 
 /* USER CODE END Variables */
 
@@ -164,62 +165,16 @@ void StartDefaultTask(void const * argument)
 }
 
 /* USER CODE BEGIN Application */
+
 void taskLed7Seg(void const * argument)
 {
-	// definicje bitów dla poszczególnych segmentów LED
-	    #define SEG_A A_Pin
-	    #define SEG_B B_Pin
-	    #define SEG_C C_Pin
-	    #define SEG_D D_Pin
-	    #define SEG_E E_Pin
-	    #define SEG_F F_Pin
-	    #define SEG_G G_Pin
-	    #define SEG_DP DP_Pin
-	    #define NIC 10
-	    #define MIN 11
-	    #define STOP 12
-	    #define NAP 13
-
-	    // definicja tablicy zawieraj±cej definicje bitowe cyfr LED
-	    const uint16_t cyfry[14] = {
-	        (SEG_A|SEG_B|SEG_C|SEG_D|SEG_E|SEG_F),			// 0
-	        (SEG_B|SEG_C),						// 1
-	        (SEG_A|SEG_B|SEG_D|SEG_E|SEG_G),			// 2
-	        (SEG_A|SEG_B|SEG_C|SEG_D|SEG_G),			// 3
-	        (SEG_B|SEG_C|SEG_F|SEG_G),				// 4
-	        (SEG_A|SEG_C|SEG_D|SEG_F|SEG_G),			// 5
-	        (SEG_A|SEG_C|SEG_D|SEG_E|SEG_F|SEG_G),			// 6
-	        (SEG_A|SEG_B|SEG_C),					// 7
-	        (SEG_A|SEG_B|SEG_C|SEG_D|SEG_E|SEG_F|SEG_G),            // 8
-	        (SEG_A|SEG_B|SEG_C|SEG_D|SEG_F|SEG_G),			// 9
-	        0,							// NIC (puste miejsce)
-	        SEG_G,                                                  // MIN
-	        (SEG_A|SEG_B|SEG_F|SEG_G),				//STOP
-	        (SEG_E|SEG_D|SEG_C)					//u
-	    };
-
-
-	    uint16_t maskaAnod = 	A1_Pin | A2_Pin | A3_Pin | A4_Pin | A5_Pin| A6_Pin| A7_Pin| A8_Pin| A9_Pin| A10_Pin| A11_Pin| A12_Pin ;
-
-	   uint16_t maskaSeg =  A_Pin | B_Pin | C_Pin | D_Pin | E_Pin | F_Pin | G_Pin | DP_Pin ;
-	    uint8_t idxTmp = 1, idx = 1;
-
-	    static uint8_t sekundy, minuty, godziny;
-	    static uint32_t milisec;
+	static uint8_t sekundy, minuty, godziny;
+	static uint32_t milisec;
 
 	uint32_t PreviousWakeTime = osKernelSysTick();
 
-
-	HAL_RTCEx_SetSecond_IT(&hrtc);
-
-
-
-
 	for(;;)
 	{
-
-
-
 
 
 		if (HAL_RTC_GetTime(&hrtc, & getTime, RTC_FORMAT_BIN) != HAL_OK)
@@ -230,7 +185,6 @@ void taskLed7Seg(void const * argument)
 		  {
 		    Error_Handler();
 		  }
-
 
 
 		milisec++;
@@ -255,27 +209,31 @@ void taskLed7Seg(void const * argument)
 		sekundy = getTime.Seconds;
 
 
-
 		cyfra_1 = godziny/10;
-		if (cyfra_1 == 0) cyfra_1 = NIC;
-
+		if (cyfra_1 == 0) cyfra_1 = 10;
 		cyfra_2 = godziny%10;
 		cyfra_3 = minuty/10;
 		cyfra_4 = minuty%10;
+
+
+
+
+
 		cyfra_5 = sekundy/10;
 		cyfra_6 = sekundy%10;
 		kropka_6 = 1;
-		cyfra_7 = NIC;//(milisec%100) / 10;
-		cyfra_8 = milisec/100;
 
-//		cyfra_1 = 1;
-//		cyfra_2 = 2;
-//		cyfra_3 = 3;
-//		cyfra_4 = 4;
-//		cyfra_5 = 5;
-//		cyfra_6 = 6;
-//		cyfra_7 = 7;
-//		cyfra_8 = 8;
+		if (++sciemniacz>99) {
+			sciemniacz = 0;
+		}
+
+		cyfra_7 = sciemniacz/10 ;//(milisec%100) / 10;
+		cyfra_8 = sciemniacz%10;
+
+
+
+
+
 		cyfra_9 = getDate.Month/10;
 		cyfra_10 = getDate.Month%10;
 		kropka_10 = 1;
@@ -288,165 +246,7 @@ void taskLed7Seg(void const * argument)
 		else{
 			kropka_4 = 0;
 		}
-
-		HAL_GPIO_WritePin(A_GPIO_Port, maskaSeg, GPIO_PIN_RESET);
-
-
-
-		HAL_GPIO_WritePin(A1_GPIO_Port, maskaAnod, GPIO_PIN_RESET);
-		switch (idx) {
-			case 1:
-				HAL_GPIO_WritePin(A_GPIO_Port, cyfry[cyfra_1], GPIO_PIN_SET);
-				if (kropka_1 == 1) {
-					HAL_GPIO_WritePin(DP_GPIO_Port, DP_Pin, GPIO_PIN_SET);
-				}
-				HAL_GPIO_WritePin(A1_GPIO_Port, A1_Pin, GPIO_PIN_SET);
-				break;
-			case 2:
-				HAL_GPIO_WritePin(A_GPIO_Port, cyfry[cyfra_2], GPIO_PIN_SET);
-				if (kropka_2 == 1) {
-					HAL_GPIO_WritePin(DP_GPIO_Port, DP_Pin, GPIO_PIN_SET);
-				}
-				HAL_GPIO_WritePin(A2_GPIO_Port, A2_Pin, GPIO_PIN_SET);
-				break;
-			case 3:
-				HAL_GPIO_WritePin(A_GPIO_Port, cyfry[cyfra_3], GPIO_PIN_SET);
-				if (kropka_3 == 1) {
-					HAL_GPIO_WritePin(DP_GPIO_Port, DP_Pin, GPIO_PIN_SET);
-				}
-				HAL_GPIO_WritePin(A3_GPIO_Port, A3_Pin, GPIO_PIN_SET);
-				break;
-			case 4:
-				HAL_GPIO_WritePin(A_GPIO_Port, cyfry[cyfra_4], GPIO_PIN_SET);
-				if (kropka_4 == 1) {
-					HAL_GPIO_WritePin(DP_GPIO_Port, DP_Pin, GPIO_PIN_SET);
-				}
-				HAL_GPIO_WritePin(A4_GPIO_Port, A4_Pin, GPIO_PIN_SET);
-				break;
-			case 5:
-				HAL_GPIO_WritePin(A_GPIO_Port, cyfry[cyfra_5], GPIO_PIN_SET);
-				if (kropka_5 == 1) {
-					HAL_GPIO_WritePin(DP_GPIO_Port, DP_Pin, GPIO_PIN_SET);
-				}
-				HAL_GPIO_WritePin(A5_GPIO_Port, A5_Pin, GPIO_PIN_SET);
-				break;
-			case 6:
-				HAL_GPIO_WritePin(A_GPIO_Port, cyfry[cyfra_6], GPIO_PIN_SET);
-				if (kropka_6 == 1) {
-					HAL_GPIO_WritePin(DP_GPIO_Port, DP_Pin, GPIO_PIN_SET);
-				}
-				HAL_GPIO_WritePin(A6_GPIO_Port, A6_Pin, GPIO_PIN_SET);
-				break;
-			case 7:
-				HAL_GPIO_WritePin(A_GPIO_Port, cyfry[cyfra_7], GPIO_PIN_SET);
-				if (kropka_7 == 1) {
-					HAL_GPIO_WritePin(DP_GPIO_Port, DP_Pin, GPIO_PIN_SET);
-				}
-				HAL_GPIO_WritePin(A7_GPIO_Port, A7_Pin, GPIO_PIN_SET);
-				break;
-			case 8:
-				HAL_GPIO_WritePin(A_GPIO_Port, cyfry[cyfra_8], GPIO_PIN_SET);
-				if (kropka_8 == 1) {
-					HAL_GPIO_WritePin(DP_GPIO_Port, DP_Pin, GPIO_PIN_SET);
-				}
-				HAL_GPIO_WritePin(A8_GPIO_Port, A8_Pin, GPIO_PIN_SET);
-				break;
-			case 9:
-				HAL_GPIO_WritePin(A_GPIO_Port, cyfry[cyfra_9], GPIO_PIN_SET);
-				if (kropka_9 == 1) {
-					HAL_GPIO_WritePin(DP_GPIO_Port, DP_Pin, GPIO_PIN_SET);
-				}
-				HAL_GPIO_WritePin(A9_GPIO_Port, A9_Pin, GPIO_PIN_SET);
-				break;
-			case 10:
-				HAL_GPIO_WritePin(A_GPIO_Port, cyfry[cyfra_10], GPIO_PIN_SET);
-				if (kropka_10 == 1) {
-					HAL_GPIO_WritePin(DP_GPIO_Port, DP_Pin, GPIO_PIN_SET);
-				}
-				HAL_GPIO_WritePin(A10_GPIO_Port, A10_Pin, GPIO_PIN_SET);
-				break;
-			case 11:
-				HAL_GPIO_WritePin(A_GPIO_Port, cyfry[cyfra_11], GPIO_PIN_SET);
-				if (kropka_11 == 1) {
-					HAL_GPIO_WritePin(DP_GPIO_Port, DP_Pin, GPIO_PIN_SET);
-				}
-				HAL_GPIO_WritePin(A11_GPIO_Port, A11_Pin, GPIO_PIN_SET);
-				break;
-			case 12:
-				HAL_GPIO_WritePin(A_GPIO_Port, cyfry[cyfra_12], GPIO_PIN_SET);
-				if (kropka_12 == 1) {
-					HAL_GPIO_WritePin(DP_GPIO_Port, DP_Pin, GPIO_PIN_SET);
-				}
-				HAL_GPIO_WritePin(A12_GPIO_Port, A12_Pin, GPIO_PIN_SET);
-				break;
-		}
-
-
-//		if (++idx > 12) {
-//			idx = 1;
-//		}
-
-
-
-
-		switch  (idxTmp) {
-		case 1:
-			idx = 1;
-			break;
-		case 2:
-			idx = 2;
-			break;
-		case 3:
-			idx = 3;
-			break;
-		case 4:
-			idx = 4;
-			break;
-		case 5:
-			idx = 5;
-			break;
-		case 6:
-			idx = 6;
-			break;
-		case 7:
-			idx = 7;
-			break;
-		case 8:
-			idx = 8;
-			break;
-		case 9:
-			idx = 1;
-			break;
-		case 10:
-			idx = 2;
-			break;
-		case 11:
-			idx = 3;
-			break;
-		case 12:
-			idx = 4;
-			break;
-		case 13:
-			idx = 9;
-			break;
-		case 14:
-			idx = 10;
-			break;
-		case 15:
-			idx =11;
-			break;
-		case 16:
-			idx = 12;
-			break;
-		}
-
-		if (++idxTmp > 16){
-			idxTmp = 1;
-		}
-
-
-
-	    osDelayUntil(&PreviousWakeTime, 1);
+	    osDelayUntil(&PreviousWakeTime, 250);
 	}
 }
 
@@ -521,6 +321,9 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 		 HAL_UART_Receive_DMA(&huart1, Rx_data, 1);
 	  }
 }
+
+
+
 
 
 /* USER CODE END Application */

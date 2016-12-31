@@ -44,6 +44,8 @@ RTC_HandleTypeDef hrtc;
 /* RTC init function */
 void MX_RTC_Init(void)
 {
+  RTC_TimeTypeDef sTime;
+  RTC_DateTypeDef DateToUpdate;
 
     /**Initialize RTC and set the Time and Date 
     */
@@ -55,7 +57,24 @@ void MX_RTC_Init(void)
     Error_Handler();
   }
 
-
+//  sTime.Hours = 0x12;
+//  sTime.Minutes = 0x0;
+//  sTime.Seconds = 0x0;
+//
+//  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//  DateToUpdate.WeekDay = RTC_WEEKDAY_MONDAY;
+//  DateToUpdate.Month = RTC_MONTH_JANUARY;
+//  DateToUpdate.Date = 0x1;
+//  DateToUpdate.Year = 0x0;
+//
+//  if (HAL_RTC_SetDate(&hrtc, &DateToUpdate, RTC_FORMAT_BCD) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
 
 }
 
