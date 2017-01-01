@@ -1,7 +1,7 @@
 Src/stm32f1xx_hal_timebase_TIM.o: ../Src/stm32f1xx_hal_timebase_TIM.c \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/stm32f1xx_hal_conf.h \
- F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/mxconstants.h \
+ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/main.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h \
@@ -34,7 +34,7 @@ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_H
 
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/stm32f1xx_hal_conf.h:
 
-F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/mxconstants.h:
+F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/main.h:
 
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h:
 

@@ -23,6 +23,5 @@ Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS \
 Middlewares/ST/STM32_USB_Device_Library/Core/Src \
 Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src \
 Drivers/STM32F1xx_HAL_Driver/Src \
-Drivers/CMSIS/Device/ST/STM32F1xx/Source/Templates \
 Drivers/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc \
 

@@ -5,7 +5,7 @@ Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.o: \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/CMSIS/Include/cmsis_gcc.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/FreeRTOSConfig.h \
- F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/mxconstants.h \
+ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/main.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_Party/FreeRTOS/Source/include/portable.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h \
@@ -31,7 +31,7 @@ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_P
 
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/FreeRTOSConfig.h:
 
-F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/mxconstants.h:
+F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/main.h:
 
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h:
 

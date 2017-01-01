@@ -1,7 +1,7 @@
 Src/freertos.o: ../Src/freertos.c \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/FreeRTOSConfig.h \
- F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/mxconstants.h \
+ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/main.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_Party/FreeRTOS/Source/include/portable.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h \
@@ -53,13 +53,14 @@ Src/freertos.o: ../Src/freertos.c \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/usbd_conf.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/usart.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/tim.h \
- F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/rtc.h
+ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/rtc.h \
+ ../Src/oneWire.h
 
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/FreeRTOSConfig.h:
 
-F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/mxconstants.h:
+F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/main.h:
 
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h:
 
@@ -164,3 +165,5 @@ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/usart.h:
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/tim.h:
 
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/rtc.h:
+
+../Src/oneWire.h:
