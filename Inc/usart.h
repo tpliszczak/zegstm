@@ -60,7 +60,7 @@ extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN Private defines */
-uint8_t flagaKoncaRxt;
+volatile uint8_t flagaKoncaRxt;
 /* USER CODE END Private defines */
 
 extern void Error_Handler(void);

@@ -67,6 +67,9 @@ osThreadId defaultTaskHandle;
 osThreadId blueTaskHandle;
 osSemaphoreId blueBinarySemHandle;
 
+uint8_t temp1, temp2, dsBuff[9], temperaturaDs[3];
+uint16_t DS_tmp;
+
 osThreadId taskLed7SegHandle;
 uint8_t cyfra_1, cyfra_2, cyfra_3, cyfra_4, cyfra_5, cyfra_6, cyfra_7, cyfra_8, cyfra_9, cyfra_10, cyfra_11, cyfra_12;
 uint8_t kropka_1, kropka_2, kropka_3, kropka_4, kropka_5, kropka_6, kropka_7, kropka_8, kropka_9, kropka_10, kropka_11, kropka_12;
@@ -172,7 +175,6 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  uint8_t c[2] = {55,10};
 	//  HAL_UART_Transmit_DMA(&huart1, c , 2 );  //DMA
 
    // HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
@@ -186,12 +188,13 @@ void StartDefaultTask(void const * argument)
 void taskLed7Seg(void const * argument)
 {
 
-	static uint32_t milisec;
+	static uint32_t milisec, konewrt=0;
 
 	uint32_t PreviousWakeTime = osKernelSysTick();
 
-	for(;;)
-	{
+	uint8_t  temperaturaLast=0, licznikErr=0, odczyt = 0;
+
+	for(;;){
 
 
 		if (HAL_RTC_GetTime(&hrtc, & getTime, RTC_FORMAT_BIN) != HAL_OK)
@@ -226,13 +229,45 @@ void taskLed7Seg(void const * argument)
 		sekundy = getTime.Seconds;
 
 
+
+			if(  sekundy%2==0 && konewrt==0 && DS_Reset() ){
+				DS_Write(0xcc);        // SKIP ROM
+				DS_Write(0x44);       // CONVERT T
+				konewrt = 1;
+			} else if(  sekundy%3==0 && DS_Reset()){
+				konewrt = 0;
+				odczyt = 1;
+			        DS_Write(0xcc); // SKIP ROM
+			        DS_Write(0xbe); // READ SCRATCHPAD
+			    	uint8_t  j;
+			    	for(j=0;j<2;j++){
+			    		dsBuff[j]=DS_Read();
+			    	}
+			    	DS_Reset();
+
+			    	DS_tmp =  dsBuff[0] | (dsBuff[1]<<8 );
+
+			    	temperaturaDs[2]= (( dsBuff[0] & 0x0F)*625)/1000;
+			    	// sign temperature
+
+			    	temperaturaDs[0]=dsBuff[1]>>7;
+			    		if( temperaturaDs[0] )
+			    		 {
+			    		  DS_tmp = ~DS_tmp + 1;
+			    		 }
+
+			    		temperaturaDs[1]=((DS_tmp >> 4 ) & 0x7f );
+
+
+			   // }
+			}
+
+
 		cyfra_1 = godziny/10;
 		if (cyfra_1 == 0) cyfra_1 = 10;
 		cyfra_2 = godziny%10;
 		cyfra_3 = minuty/10;
 		cyfra_4 = minuty%10;
-
-
 
 
 
@@ -252,11 +287,54 @@ cyfra_8 = getDate.Year %10;
 
 
 
-		cyfra_9 = getDate.Month/10;
-		cyfra_10 = getDate.Month%10;
-		kropka_10 = 1;
-		cyfra_11 = getDate.Date/10;
-		cyfra_12 = getDate.Date%10;
+//		cyfra_9 = getDate.Month/10;
+//		cyfra_10 = getDate.Month%10;
+//		kropka_10 = 1;
+//		cyfra_11 = getDate.Date/10;
+//		cyfra_12 = getDate.Date%10;
+
+
+
+
+
+		if(           (        (          (temperaturaDs[1] - temperaturaLast) >1    ) || ( (temperaturaLast - temperaturaDs[1]) >1)      )   && (licznikErr<5) && (odczyt == 1)) {
+			odczyt = 0;
+			++licznikErr;
+			kropka_12 = 1;
+
+		}else if (odczyt == 1){
+			odczyt = 0;
+			licznikErr = 0;
+
+		kropka_9 = 0;
+		kropka_10= 0;
+		kropka_11 = 0;
+		kropka_12 = 0;
+			temperaturaLast = temperaturaDs[1];
+			if (temperaturaDs[0]){//minus
+				cyfra_9 = 11;
+				if (temperaturaDs[1] > 9) {
+					cyfra_10 = temperaturaDs[1]/10;
+					cyfra_11 = temperaturaDs[1]%10;
+				}else{
+					cyfra_10 = temperaturaDs[1];
+					kropka_10 = 1;
+					cyfra_11 = temperaturaDs[2];
+				}
+			}else{
+					cyfra_9 = temperaturaDs[1]/10;
+					if(cyfra_9 == 0) {
+						cyfra_9 = 10;
+						cyfra_10 = temperaturaDs[1];
+					}else{
+						cyfra_10 = temperaturaDs[1]%10;
+					}
+					kropka_10 = 1;
+					cyfra_11 = temperaturaDs[2];
+			}
+			cyfra_12 = 12;
+
+		}
 
 		if (sekundy%2) {
 			kropka_4 = 1;
@@ -264,7 +342,7 @@ cyfra_8 = getDate.Year %10;
 		else{
 			kropka_4 = 0;
 		}
-	    osDelayUntil(&PreviousWakeTime, 250);
+	    osDelayUntil(&PreviousWakeTime, 1000);
 	}
 }
 

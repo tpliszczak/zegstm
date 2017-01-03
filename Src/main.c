@@ -61,6 +61,7 @@
 
 /* USER CODE BEGIN PV */
 
+volatile uint32_t flagaDelay;
 
 
 uint16_t maskaAnod = A1_Pin | A2_Pin | A3_Pin | A4_Pin | A5_Pin | A6_Pin| A7_Pin | A8_Pin | A9_Pin | A10_Pin | A11_Pin | A12_Pin;
@@ -391,7 +392,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 /* USER CODE BEGIN Callback 1 */
   if (htim->Instance == TIM3) {
 	  flagaKoncaRxt = 1;
-	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+//	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+
+      if (flagaDelay >0) {
+    	  --flagaDelay;
+      }
 
   }
 

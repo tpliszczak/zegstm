@@ -54,7 +54,8 @@ Src/freertos.o: ../Src/freertos.c \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/usart.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/tim.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/rtc.h \
- ../Src/oneWire.h
+ ../Src/oneWire.h \
+ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/main.h
 
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 
@@ -167,3 +168,5 @@ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/tim.h:
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/rtc.h:
 
 ../Src/oneWire.h:
+
+F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/main.h:
