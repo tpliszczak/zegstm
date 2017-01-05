@@ -56,6 +56,8 @@
 #include "rtc.h"
 #include <string.h>
 #include "oneWire.h"
+#include "adc.h"
+#include "wyswietlacz7Seg.h"
 
 /* USER CODE END Includes */
 
@@ -67,12 +69,22 @@ osThreadId defaultTaskHandle;
 osThreadId blueTaskHandle;
 osSemaphoreId blueBinarySemHandle;
 
+//wyswietlacz
+
+extern wyswietlacz7Seg wyswietlaCyfrySet;
+uint8_t cyfra_1, cyfra_2, cyfra_3, cyfra_4, cyfra_5, cyfra_6, cyfra_7, cyfra_8, cyfra_9, cyfra_10, cyfra_11, cyfra_12;
+uint8_t kropka_1, kropka_2, kropka_3, kropka_4, kropka_5, kropka_6, kropka_7, kropka_8, kropka_9, kropka_10, kropka_11, kropka_12;
+
+uint8_t rtcTimer1Sec, czujniki_cnt;
+
+
+volatile uint32_t ADCread, ADCpoziom[3]={900,1500,2300};
+
 uint8_t temp1, temp2, dsBuff[9], temperaturaDs[3];
 uint16_t DS_tmp;
 
 osThreadId taskLed7SegHandle;
-uint8_t cyfra_1, cyfra_2, cyfra_3, cyfra_4, cyfra_5, cyfra_6, cyfra_7, cyfra_8, cyfra_9, cyfra_10, cyfra_11, cyfra_12;
-uint8_t kropka_1, kropka_2, kropka_3, kropka_4, kropka_5, kropka_6, kropka_7, kropka_8, kropka_9, kropka_10, kropka_11, kropka_12;
+
 
 RTC_TimeTypeDef getTime;
 RTC_DateTypeDef getDate;
@@ -85,7 +97,7 @@ volatile uint8_t txDone = 0;
  uint8_t sekundy, minuty, godziny;
 
 uint32_t sciemniacz = 0;  //80noc 50 srednio 0 reszta
-uint8_t lenth;
+
 /* USER CODE END Variables */
 
 /* Function prototypes -------------------------------------------------------*/
@@ -98,6 +110,12 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 void taskLed7Seg(void const * argument);
 void taskBlue(void const * argument);
+
+uint8_t rtcSetTime(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef* time);
+uint8_t rtcGetTime(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef* time);
+
+void displayPrzeliczCzas(void);
+void przyciskiRtc(void);
 
 
 /* USER CODE END FunctionPrototypes */
@@ -172,188 +190,166 @@ void StartDefaultTask(void const * argument)
   MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN StartDefaultTask */
-  /* Infinite loop */
-  for(;;)
-  {
-	//  HAL_UART_Transmit_DMA(&huart1, c , 2 );  //DMA
-
-   // HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-    osDelay(1000);
+  for(;;)  {
+	  przyciskiRtc();
   }
   /* USER CODE END StartDefaultTask */
 }
 
 /* USER CODE BEGIN Application */
 
-void taskLed7Seg(void const * argument)
-{
-
-	static uint32_t milisec, konewrt=0;
-
+void taskLed7Seg(void const * argument){
 	uint32_t PreviousWakeTime = osKernelSysTick();
 
+	static uint32_t  konewrt=0, DSerror=0;
 	uint8_t  temperaturaLast=0, licznikErr=0, odczyt = 0;
+	uint16_t tempSrednia = 0, tempsredniaTab[5] = {0,0,0,0,0}, indeksSredni=0;
 
 	for(;;){
 
 
-		if (HAL_RTC_GetTime(&hrtc, & getTime, RTC_FORMAT_BIN) != HAL_OK)
-		  {
-		    Error_Handler();
-		  }
+		//czujniki_cnt = search_sensors(); //ilosc ds
+
+
+
+
+		rtcGetTime(&hrtc, & getTime);
+
 		if (HAL_RTC_GetDate(&hrtc, & getDate, RTC_FORMAT_BIN) != HAL_OK)
 		  {
 		    Error_Handler();
 		  }
 
-
-		milisec++;
-		if (milisec>999) {
-			milisec = 0;
-			sekundy++;
-		}
-		if (sekundy>59) {
-			sekundy = 0;
-			minuty++;
-		}
-		if (minuty>59) {
-				minuty = 0;
-				godziny++;
-		}
-		if (godziny > 24){
-			godziny = 0;
-		}
-
 		godziny = getTime.Hours;
 		minuty = getTime.Minutes;
 		sekundy = getTime.Seconds;
 
+		if (sekundy % 1 == 0 && konewrt == 0 && DS_Reset()) {
 
+			HAL_ADC_Start_IT(&hadc1); //ADC
 
-			if(  sekundy%2==0 && konewrt==0 && DS_Reset() ){
-				DS_Write(0xcc);        // SKIP ROM
-				DS_Write(0x44);       // CONVERT T
-				konewrt = 1;
-			} else if(  sekundy%3==0 && DS_Reset()){
-				konewrt = 0;
-				odczyt = 1;
-			        DS_Write(0xcc); // SKIP ROM
-			        DS_Write(0xbe); // READ SCRATCHPAD
-			    	uint8_t  j;
-			    	for(j=0;j<2;j++){
-			    		dsBuff[j]=DS_Read();
-			    	}
-			    	DS_Reset();
-
-			    	DS_tmp =  dsBuff[0] | (dsBuff[1]<<8 );
-
-			    	temperaturaDs[2]= (( dsBuff[0] & 0x0F)*625)/1000;
-			    	// sign temperature
-
-			    	temperaturaDs[0]=dsBuff[1]>>7;
-			    		if( temperaturaDs[0] )
-			    		 {
-			    		  DS_tmp = ~DS_tmp + 1;
-			    		 }
-
-			    		temperaturaDs[1]=((DS_tmp >> 4 ) & 0x7f );
-
-
-			   // }
+			DS_Write(0xcc);        // SKIP ROM
+			DS_Write(0x44);       // CONVERT T
+			konewrt = 1;
+		} else if (sekundy % 3 == 0 && DS_Reset()) {
+			konewrt = 0;
+			odczyt = 1;
+			DS_Write(0xcc); // SKIP ROM
+			DS_Write(0xbe); // READ SCRATCHPAD
+			uint8_t j;
+			for (j = 0; j < 2; j++) {
+				dsBuff[j] = DS_Read();
 			}
+			DS_Reset();
 
+			DS_tmp = dsBuff[0] | (dsBuff[1] << 8);
+			temperaturaDs[2] = ((dsBuff[0] & 0x0F) * 625) / 1000;
+			// sign temperature
+			temperaturaDs[0] = dsBuff[1] >> 7;
+			if (temperaturaDs[0]) {
+				DS_tmp = ~DS_tmp + 1;
+			}
+			temperaturaDs[1] = ((DS_tmp >> 4) & 0x7f);
+		}
 
-		cyfra_1 = godziny/10;
-		if (cyfra_1 == 0) cyfra_1 = 10;
-		cyfra_2 = godziny%10;
-		cyfra_3 = minuty/10;
-		cyfra_4 = minuty%10;
-
+//		temperaturaDs[0] = 1;
+//		temperaturaDs[1] = 0;
+//		temperaturaDs[2] = 1;
 
 
 		cyfra_5 = sekundy/10;
 		cyfra_6 = sekundy%10;
 		kropka_6 = 1;
 
-//		if (++sciemniacz>99) {
-//			sciemniacz = 0;
-//		}
+		cyfra_7 = getDate.Year / 10;
+		cyfra_8 = getDate.Year % 10;
 
-//		cyfra_7 = sciemniacz/10 ;//(milisec%100) / 10;
-//		cyfra_8 = sciemniacz%10;
+		cyfra_7 = (DSerror%100) /10;
+		cyfra_8 = (DSerror%100) % 10;
 
-cyfra_7 = getDate.Year / 10;
-cyfra_8 = getDate.Year %10;
-
-
-
-//		cyfra_9 = getDate.Month/10;
-//		cyfra_10 = getDate.Month%10;
-//		kropka_10 = 1;
-//		cyfra_11 = getDate.Date/10;
-//		cyfra_12 = getDate.Date%10;
-
-
-
-
-
-		if(           (        (          (temperaturaDs[1] - temperaturaLast) >1    ) || ( (temperaturaLast - temperaturaDs[1]) >1)      )   && (licznikErr<5) && (odczyt == 1)) {
+		if ((((temperaturaDs[1] - temperaturaLast) > 1) || ((temperaturaLast - temperaturaDs[1]) > 1)) && (licznikErr < 5) && (odczyt == 1)) {
 			odczyt = 0;
 			++licznikErr;
 			kropka_12 = 1;
+			++DSerror;
 
-		}else if (odczyt == 1){
+		} else if (odczyt == 1) {
 			odczyt = 0;
 			licznikErr = 0;
 
-		kropka_9 = 0;
-		kropka_10= 0;
-		kropka_11 = 0;
-		kropka_12 = 0;
+			kropka_9 = 0;
+			kropka_10 = 0;
+			kropka_11 = 0;
+			kropka_12 = 0;
 			temperaturaLast = temperaturaDs[1];
-			if (temperaturaDs[0]){//minus
-				cyfra_9 = 11;
-				if (temperaturaDs[1] > 9) {
-					cyfra_10 = temperaturaDs[1]/10;
-					cyfra_11 = temperaturaDs[1]%10;
+
+			if(indeksSredni > 4)indeksSredni = 0;
+			tempsredniaTab[indeksSredni++] = temperaturaDs[1] * 10 + temperaturaDs[2];
+
+			tempSrednia = 0;
+			uint8_t ii;
+			for(ii = 0; ii < 5; ++ii){
+				tempSrednia += tempsredniaTab[ii];
+			}
+			tempSrednia/=5;
+
+
+			if (temperaturaDs[0]) { //minus
+				if(tempSrednia%10 != 0){
+					cyfra_9 = MINUS;
+					HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 				}else{
-					cyfra_10 = temperaturaDs[1];
-					kropka_10 = 1;
-					cyfra_11 = temperaturaDs[2];
+					cyfra_9 = NIC;
+					HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 				}
-			}else{
-					cyfra_9 = temperaturaDs[1]/10;
-					if(cyfra_9 == 0) {
-						cyfra_9 = 10;
-						cyfra_10 = temperaturaDs[1];
-					}else{
-						cyfra_10 = temperaturaDs[1]%10;
-					}
+				if (tempSrednia > 99) {
+					cyfra_10 = tempSrednia / 100;
+					cyfra_11 = (tempSrednia/10) % 10;
+				} else {
+					cyfra_10 = tempSrednia/10;
 					kropka_10 = 1;
-					cyfra_11 = temperaturaDs[2];
+					cyfra_11 = tempSrednia%10;
+				}
+			} else {
+				cyfra_9 = tempSrednia/ 100;
+				if (cyfra_9 == 0) {
+					cyfra_9 = 10;
+					cyfra_10 = tempSrednia/10;
+				} else {
+					cyfra_10 = (tempSrednia/10) % 10;
+				}
+				kropka_10 = 1;
+				cyfra_11 = tempSrednia%10;
 			}
 			cyfra_12 = 12;
 
 		}
 
-		if (sekundy%2) {
+
+		if (sekundy % 2) {
 			kropka_4 = 1;
-		}
-		else{
+		} else {
 			kropka_4 = 0;
 		}
-	    osDelayUntil(&PreviousWakeTime, 1000);
+
+
+		displayPrzeliczCzas();
+		if(rtcTimer1Sec) --rtcTimer1Sec;
+
+		osDelayUntil(&PreviousWakeTime, 1000);
 	}
 }
 
 
 void taskBlue(void const * argument){
 
+	uint8_t buffTmp[256], lenth=0;
+	uint8_t tmp2[10];
+	uint8_t tmpBuff[10];
 	  for(;;) {
+
 		  osSemaphoreWait(blueBinarySemHandle, osWaitForever);
 
-		  uint8_t buffTmp[256], len;
-		  len = Rx_indx;
 		  Rx_indx = 0;
 		  uint8_t i = 0;
 		  for ( i = 0;  i < 255; ++ i) {
@@ -364,69 +360,65 @@ void taskBlue(void const * argument){
 			  blueTxFrame[i] = 0;
 		  }
 
-
 		  if( (buffTmp[0]=='a') && (buffTmp[1]=='t') && (buffTmp[2]=='+')   ){
-
 			  //komenda at+
-
 			  //odczyt t
 			  if( (buffTmp[3]=='t') && (buffTmp[4]!='=')  ){
-				  uint8_t tmp2[10], len;
 
 				  if(txDone == 0){
-					  strcpy( blueTxFrame, "Czas w zegarze ISO 8601: " );
+					  strcpy( (char*) blueTxFrame, "Czas w zegarze ISO 8601: " );
 
 					  if(getDate.Year < 10){
-						  strcat( blueTxFrame, "200" );
+						  strcat((char*) blueTxFrame, "200" );
 					  }else{
-						  strcat( blueTxFrame, "20" );
+						  strcat( (char*) blueTxFrame, "20" );
 					  }
-					  itoa(getDate.Year ,tmp2,10);
-					  strcat( blueTxFrame, tmp2 );
+					  itoa(getDate.Year , (char*) tmp2,10);
+					  strcat( (char*) blueTxFrame, (char*) tmp2 );
 
 					  if(getDate.Month < 10){
-						  strcat( blueTxFrame, "-0" );
+						  strcat( (char*) blueTxFrame, "-0" );
 					  }else{
-						  strcat( blueTxFrame, "-" );
+						  strcat((char*) blueTxFrame, "-" );
 					  }
-					  itoa(getDate.Month ,tmp2,10);
-					  strcat( blueTxFrame, tmp2 );
+					  itoa(getDate.Month , (char*) tmp2,10);
+					  strcat( (char*) blueTxFrame, (char*) tmp2 );
 
 					  if(getDate.Date < 10){
-						  strcat( blueTxFrame, "-0" );
+						  strcat( (char*) blueTxFrame, "-0" );
 					  }else{
-						  strcat( blueTxFrame, "-" );
+						  strcat( (char*) blueTxFrame, "-" );
 					  }
-					  itoa(getDate.Date ,tmp2,10);
-					  strcat( blueTxFrame, tmp2 );
+					  itoa(getDate.Date , (char*)tmp2,10);
+					  strcat( (char*) blueTxFrame, (char*) tmp2 );
 
 					  if(getTime.Hours < 10){
-						  strcat( blueTxFrame, "T0" );
+						  strcat( (char*) blueTxFrame, "T0" );
 					  }else{
-						  strcat( blueTxFrame, "T" );
+						  strcat( (char*) blueTxFrame, "T" );
 					  }
-					  itoa(godziny,tmp2,10);
-					  strcat( blueTxFrame, tmp2 );
+					  itoa(godziny, (char*) tmp2,10);
+					  strcat((char*)  blueTxFrame, (char*) tmp2 );
 
 					  if(getTime.Minutes < 10){
-						  strcat( blueTxFrame, ":0" );
+						  strcat( (char*) blueTxFrame, ":0" );
 					  }else{
-						  strcat( blueTxFrame, ":" );
+						  strcat( (char*) blueTxFrame, ":" );
 					  }
-					  itoa(minuty,tmp2,10);
-					  strcat( blueTxFrame, tmp2 );
+					  itoa(minuty, (char*) tmp2,10);
+					  strcat( (char*) blueTxFrame, (char*) tmp2 );
 
 					  if(getTime.Seconds < 10){
-						  strcat( blueTxFrame, ":0" );
+						  strcat( (char*) blueTxFrame, ":0" );
 					  }else{
-						  strcat( blueTxFrame, ":" );
+						  strcat( (char*) blueTxFrame, ":" );
 					  }
-					  itoa(sekundy,tmp2,10);
-					  strcat( blueTxFrame, tmp2 );
+					  itoa(sekundy, (char*) tmp2,10);
+					  strcat( (char*) blueTxFrame, (char*) tmp2 );
 
-					  strcat( blueTxFrame, "+01:00\n" );
+					  strcat( (char*)blueTxFrame, "+01:00\n" );
 
-					  lenth = strlen(blueTxFrame) ;
+					  lenth = strlen( (char*) blueTxFrame) ;
 					  if (lenth >0) {
 						  txDone = 1;
 						  HAL_UART_Transmit_DMA(&huart1, blueTxFrame , lenth);
@@ -438,19 +430,17 @@ void taskBlue(void const * argument){
 
 				  if( (buffTmp[7]==':') && (buffTmp[10]== ':') ){
 
-				  uint8_t tmpBuff[10];
-
 				  tmpBuff[0] = buffTmp[5];
 				  tmpBuff[1] = buffTmp[6];
-				  setTime.Hours =  atoi(tmpBuff);
+				  setTime.Hours =  atoi( (char*) tmpBuff);
 
 				  tmpBuff[0] = buffTmp[8];
 				  tmpBuff[1] = buffTmp[9];
-				  setTime.Minutes =  atoi(tmpBuff);
+				  setTime.Minutes =  atoi( (char*) tmpBuff);
 
 				  tmpBuff[0] = buffTmp[11];
 				  tmpBuff[1] = buffTmp[12];
-				  setTime.Seconds =  atoi(tmpBuff);
+				  setTime.Seconds =  atoi( (char*) tmpBuff);
 
 				  if (HAL_RTC_SetTime(&hrtc, &setTime, RTC_FORMAT_BIN) != HAL_OK)
 				  {
@@ -458,36 +448,32 @@ void taskBlue(void const * argument){
 				  }
 
 				  txDone = 1;
-				  char error[] = "OK\n";
-				  HAL_UART_Transmit_DMA(&huart1, error , strlen(error) );
+				  uint8_t error[] = "OK\n";
+				  HAL_UART_Transmit_DMA(&huart1, error , strlen((char*) error) );
 
 				  }else{
-
 					  if(txDone == 0){
 						  txDone = 1;
-						  char error[] = "Podaj poprawne dane np. \"at+t=22:01:55\"\n";
-						  HAL_UART_Transmit_DMA(&huart1, error , strlen(error) );
+						  uint8_t error[] = "Podaj poprawne dane np. \"at+t=22:01:55\"\n";
+						  HAL_UART_Transmit_DMA(&huart1, error , strlen((char*) error) );
 					  }
-
 				  }
 			  }
 			  if( (buffTmp[3]=='d') && (buffTmp[4]== '=')  ){
 
 				  if( (buffTmp[9]=='-') && (buffTmp[12]== '-') ){
 
-				  uint8_t tmpBuff[10];
-
 				  tmpBuff[0] = buffTmp[7];
 				  tmpBuff[1] = buffTmp[8];
-				  setDate.Year =  atoi(tmpBuff);
+				  setDate.Year =  atoi( (char*) tmpBuff);
 
 				  tmpBuff[0] = buffTmp[10];
 				  tmpBuff[1] = buffTmp[11];
-				  setDate.Month =  atoi(tmpBuff);
+				  setDate.Month =  atoi( (char*) tmpBuff);
 
 				  tmpBuff[0] = buffTmp[13];
 				  tmpBuff[1] = buffTmp[14];
-				  setDate.Date =  atoi(tmpBuff);
+				  setDate.Date =  atoi( (char*) tmpBuff);
 
 				  if (HAL_RTC_SetDate(&hrtc, &setDate, RTC_FORMAT_BIN) != HAL_OK)
 				  {
@@ -495,56 +481,131 @@ void taskBlue(void const * argument){
 				  }
 
 				  txDone = 1;
-				  char error[] = "OK\n";
-				  HAL_UART_Transmit_DMA(&huart1, error , strlen(error) );
+				  uint8_t error[] = "OK\n";
+				  HAL_UART_Transmit_DMA(&huart1, error , strlen((char*) error) );
 
 				  }else{
 
 					  if(txDone == 0){
 						  txDone = 1;
-						  char error[] = "Podaj poprawne dane np. \"at+d=2016-12-31\"\n";
-						  HAL_UART_Transmit_DMA(&huart1, error , strlen(error) );
+						  uint8_t error[] = "Podaj poprawne dane np. \"at+d=2016-12-31\"\n";
+						  HAL_UART_Transmit_DMA(&huart1, error , strlen((char*) error) );
 					  }
 
 				  }
 			  }
 
 			  if( (buffTmp[3]=='s') && (buffTmp[4]== '=')  ){
-
-
-				  uint8_t tmpBuff[10];
-				  tmpBuff[0] = buffTmp[5];
-				  tmpBuff[1] = buffTmp[6];
-			   	sciemniacz =  atoi(tmpBuff);
+				tmpBuff[0] = buffTmp[5];
+				tmpBuff[1] = buffTmp[6];
+				sciemniacz = atoi((char*) tmpBuff);
 
 				txDone = 1;
-				char error[] = "OK\n";
-				HAL_UART_Transmit_DMA(&huart1, error , strlen(error) );
+				uint8_t error[] = "OK\n";
+				HAL_UART_Transmit_DMA(&huart1, error , strlen((char*) error) );
 			  }
 
+			  if( (buffTmp[3]=='a') && (buffTmp[4]!= '=')  ){
+				if (txDone == 0) {
+					strcpy( (char*) blueTxFrame, "Odczyt ADC = ");
+					itoa(ADCread, (char*) tmp2, 10);
+					strcat( (char*) blueTxFrame, (char*) tmp2);
+					strcat((char*) blueTxFrame, "\n");
+					lenth = strlen((char*) blueTxFrame);
+					if (lenth > 0) {
+						txDone = 1;
+						HAL_UART_Transmit_DMA(&huart1, blueTxFrame, lenth);
+					}
+				}
+			  }
 
 		  }else{
 			  if(txDone == 0){
 				  txDone = 1;
-				  char error[] = "Podaj poprawne dane np. \"at+t\",\"at+t=22:01:55\", \"at+d=2016-12-30\" \n";
-				  HAL_UART_Transmit_DMA(&huart1, error , strlen(error) );
+				  uint8_t error[] = "Podaj poprawne dane np. \"at+t\",\"at+t=22:01:55\", \"at+d=2016-12-30\" \n";
+				  HAL_UART_Transmit_DMA(&huart1, error , strlen((char*) error) );
 			  }
-
 		  }
-
-
-
-
-
-
-
-
-
-		  //osDelay(100);
-
 	  }
 }
 
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
+
+	static uint32_t ADCsrednieTab[5], ADCsrednie;
+	static uint8_t i, stan;
+	uint8_t tmp2[10], lenth;
+
+	if (hadc->Instance == ADC1) {
+
+		ADCread = HAL_ADC_GetValue(hadc);
+		HAL_ADC_Stop_IT(hadc);
+
+		if(i>4)i=0;
+		ADCsrednieTab[i++] = ADCread;
+		uint8_t j;
+		ADCsrednie = 0;
+		for (j = 0; j < 5; ++j) {
+			ADCsrednie+= ADCsrednieTab[j];
+		}
+		ADCsrednie/=5;
+
+		switch (stan) {
+			case 0: //max
+				sciemniacz = 0;
+
+				if (ADCsrednie < ADCpoziom[2]) {
+					stan = 1;
+				}
+
+				break;
+			case 1: //srednio
+				sciemniacz = 30;
+
+				if (ADCsrednie < ADCpoziom[1]) {
+					stan = 2;
+				}else if (ADCsrednie > ADCpoziom[2] + 400)
+					stan = 0;
+				break;
+			case 2: //ciemno
+				sciemniacz = 50;
+
+				if (ADCsrednie < ADCpoziom[0]) {
+					stan = 3;
+				}else if (ADCsrednie > ADCpoziom[1] + 400)
+					stan = 1;
+				break;
+			case 3: //nic
+				sciemniacz = 80;
+				if (ADCsrednie > ADCpoziom[0] + 400)
+					stan = 2;
+				break;
+
+			default:
+				stan = 0;
+				break;
+		}
+
+
+
+		strcpy( (char*) blueTxFrame, "Odczyt ADC = ");
+		itoa(  ADCread, (char*) tmp2, 10);
+		strcat( (char*) blueTxFrame, (char*) tmp2);
+		strcat( (char*) blueTxFrame, " ADC srednie = ");
+		itoa(ADCsrednie, (char*) tmp2, 10);
+		strcat((char*) blueTxFrame, (char*) tmp2);
+		strcat((char*) blueTxFrame, " sciemniacz = ");
+		itoa(sciemniacz, (char*) tmp2, 10);
+		strcat((char*) blueTxFrame, (char*) tmp2);
+		strcat((char*) blueTxFrame, "\n");
+
+
+		lenth = strlen((char*) blueTxFrame);
+		if (lenth > 0) {
+			txDone = 1;
+			HAL_UART_Transmit_DMA(&huart1, blueTxFrame, lenth);
+		}
+	}
+}
 
 
 
@@ -590,6 +651,136 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 	  }
 }
 
+
+uint8_t rtcSetTime(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef* time){
+
+	uint8_t out = 0;
+	if (HAL_RTC_SetTime(hrtc, time, RTC_FORMAT_BIN) != HAL_OK) {
+		out = 1;
+		Error_Handler();
+	}
+	return out;
+}
+
+uint8_t rtcGetTime(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef* time){
+	uint8_t out = 0;
+	if (HAL_RTC_GetTime(hrtc, time, RTC_FORMAT_BIN) != HAL_OK) {
+		out = 1;
+		Error_Handler();
+	}
+	return out;
+}
+
+void displayPrzeliczCzas(void){
+
+	cyfra_1 = getTime.Hours/10;
+	if (cyfra_1 == 0) cyfra_1 = NIC;
+	cyfra_2 = getTime.Hours%10;
+	cyfra_3 = getTime.Minutes/10;
+	cyfra_4 = getTime.Minutes%10;
+
+	//przekazanie do struktury wyswietlacza
+	wyswietlaCyfrySet.cyfra_1 = cyfra_1;
+	wyswietlaCyfrySet.cyfra_2 = cyfra_2;
+	wyswietlaCyfrySet.cyfra_3 = cyfra_3;
+	wyswietlaCyfrySet.cyfra_4 = cyfra_4;
+	wyswietlaCyfrySet.cyfra_5 = cyfra_5;
+	wyswietlaCyfrySet.cyfra_6 = cyfra_6;
+	wyswietlaCyfrySet.cyfra_7 = cyfra_7;
+	wyswietlaCyfrySet.cyfra_8 = cyfra_8;
+	wyswietlaCyfrySet.cyfra_9 = cyfra_9;
+	wyswietlaCyfrySet.cyfra_10 = cyfra_10;
+	wyswietlaCyfrySet.cyfra_11 = cyfra_11;
+	wyswietlaCyfrySet.cyfra_12 = cyfra_12;
+	wyswietlaCyfrySet.kropka_1 = kropka_1;
+	wyswietlaCyfrySet.kropka_2 = kropka_2;
+	wyswietlaCyfrySet.kropka_3 = kropka_3;
+	wyswietlaCyfrySet.kropka_4 = kropka_4;
+	wyswietlaCyfrySet.kropka_5 = kropka_5;
+	wyswietlaCyfrySet.kropka_6 = kropka_6;
+	wyswietlaCyfrySet.kropka_7 = kropka_7;
+	wyswietlaCyfrySet.kropka_8 = kropka_8;
+	wyswietlaCyfrySet.kropka_9 = kropka_9;
+	wyswietlaCyfrySet.kropka_10 = kropka_10;
+	wyswietlaCyfrySet.kropka_11 = kropka_11;
+	wyswietlaCyfrySet.kropka_12 = kropka_12;
+}
+
+void przyciskiRtc(void){
+	static uint8_t wcisnietyPlusFlaga = 0;
+	static uint8_t wcisnietyMinusFlaga = 0;
+
+	//plus
+	if (!HAL_GPIO_ReadPin( PPLUS_GPIO_Port, PPLUS_Pin)) {
+		osDelay(30);
+		if (!HAL_GPIO_ReadPin( PPLUS_GPIO_Port, PPLUS_Pin)) {
+			wcisnietyMinusFlaga = 0;
+
+			if(!wcisnietyPlusFlaga) rtcTimer1Sec = 255;
+
+			if (!rtcGetTime(&hrtc, &setTime)) {
+				++setTime.Minutes;
+				if( rtcTimer1Sec <254 ){
+					uint8_t minutyTmp = ( ( setTime.Minutes / 10 ) +1) * 10;
+					setTime.Minutes = minutyTmp;
+					if (rtcTimer1Sec > 244) osDelay(200);
+				}
+				if (setTime.Minutes > 59) {
+					setTime.Minutes = 0;
+					++setTime.Hours;
+					if(setTime.Hours >23){
+						setTime.Hours = 0;
+					}
+				}
+				setTime.Seconds = 0;
+				rtcSetTime(&hrtc, &setTime);
+				rtcGetTime(&hrtc, &getTime);
+			}
+			displayPrzeliczCzas();
+			osDelay(90);
+			wcisnietyPlusFlaga = 1;
+		}
+	}
+	//minus
+	else if (!HAL_GPIO_ReadPin( PMIN_GPIO_Port, PMIN_Pin)) {
+		osDelay(30);
+		if (!HAL_GPIO_ReadPin( PMIN_GPIO_Port, PMIN_Pin)) {
+			wcisnietyPlusFlaga = 0;
+
+			if (!wcisnietyMinusFlaga)
+				rtcTimer1Sec = 255;
+
+			if (!rtcGetTime(&hrtc, &setTime)) {
+				if (rtcTimer1Sec < 254) {
+					uint8_t minutyTmp = ((setTime.Minutes / 10) - 1) * 10;
+					setTime.Minutes = minutyTmp;
+					if (rtcTimer1Sec > 244) osDelay(200);
+				}else{
+					--setTime.Minutes;
+				}
+				if (setTime.Minutes > 59) {
+					setTime.Minutes = 59;
+					--setTime.Hours;
+					if (setTime.Hours > 23) {
+						setTime.Hours = 23;
+					}
+				}
+				setTime.Seconds = 0;
+				rtcSetTime(&hrtc, &setTime);
+				rtcGetTime(&hrtc, &getTime);
+			}
+			displayPrzeliczCzas();
+			osDelay(90);
+			wcisnietyMinusFlaga = 1;
+		}
+	}else if (rtcTimer1Sec) {
+		wcisnietyPlusFlaga = 0;
+		wcisnietyMinusFlaga = 0;
+		rtcTimer1Sec = 0;
+	} else {
+		osDelay(20);
+	}
+}
 
 
 

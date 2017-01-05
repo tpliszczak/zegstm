@@ -4,6 +4,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../Src/adc.c \
 ../Src/dma.c \
 ../Src/freertos.c \
 ../Src/gpio.c \
@@ -19,9 +20,11 @@ C_SRCS += \
 ../Src/usb_device.c \
 ../Src/usbd_cdc_if.c \
 ../Src/usbd_conf.c \
-../Src/usbd_desc.c 
+../Src/usbd_desc.c \
+../Src/wyswietlacz7Seg.c 
 
 OBJS += \
+./Src/adc.o \
 ./Src/dma.o \
 ./Src/freertos.o \
 ./Src/gpio.o \
@@ -37,9 +40,11 @@ OBJS += \
 ./Src/usb_device.o \
 ./Src/usbd_cdc_if.o \
 ./Src/usbd_conf.o \
-./Src/usbd_desc.o 
+./Src/usbd_desc.o \
+./Src/wyswietlacz7Seg.o 
 
 C_DEPS += \
+./Src/adc.d \
 ./Src/dma.d \
 ./Src/freertos.d \
 ./Src/gpio.d \
@@ -55,7 +60,8 @@ C_DEPS += \
 ./Src/usb_device.d \
 ./Src/usbd_cdc_if.d \
 ./Src/usbd_conf.d \
-./Src/usbd_desc.d 
+./Src/usbd_desc.d \
+./Src/wyswietlacz7Seg.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
