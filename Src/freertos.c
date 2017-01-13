@@ -58,6 +58,8 @@
 #include "oneWire.h"
 #include "adc.h"
 #include "wyswietlacz7Seg.h"
+#include "eeprom.h"
+#include "crc.h"
 
 /* USER CODE END Includes */
 
@@ -66,19 +68,29 @@ osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN Variables */
 
+uint16_t VirtAddVarTab[NB_OF_VAR] = {0x5555, 0x6666, 0x7777};
+uint16_t eepromVarDataTab[NB_OF_VAR] = {0, 0, 0};
+uint16_t eeIloscOdpalen;
+
 osThreadId blueTaskHandle;
+osThreadId co1sekundeTaskHandle;
 osSemaphoreId blueBinarySemHandle;
 
 //wyswietlacz
 
+uint32_t crcbuff[1];
 extern wyswietlacz7Seg wyswietlaCyfrySet;
-uint8_t cyfra_1, cyfra_2, cyfra_3, cyfra_4, cyfra_5, cyfra_6, cyfra_7, cyfra_8, cyfra_9, cyfra_10, cyfra_11, cyfra_12;
-uint8_t kropka_1, kropka_2, kropka_3, kropka_4, kropka_5, kropka_6, kropka_7, kropka_8, kropka_9, kropka_10, kropka_11, kropka_12;
+
+volatile uint8_t cyfra_1, cyfra_2, cyfra_3, cyfra_4, cyfra_5, cyfra_6, cyfra_7, cyfra_8, cyfra_9, cyfra_10, cyfra_11, cyfra_12;
+volatile uint8_t kropka_1, kropka_2, kropka_3, kropka_4, kropka_5, kropka_6, kropka_7, kropka_8, kropka_9, kropka_10, kropka_11, kropka_12;
+
 
 uint8_t rtcTimer1Sec, czujniki_cnt;
 
-
 volatile uint32_t ADCread, ADCpoziom[3]={900,1500,2300};
+
+
+
 
 uint8_t temp1, temp2, dsBuff[9], temperaturaDs[3];
 uint16_t DS_tmp;
@@ -91,6 +103,7 @@ RTC_DateTypeDef getDate;
 
 RTC_TimeTypeDef setTime;
 RTC_DateTypeDef setDate;
+
 
 uint8_t blueRxFrame[256], blueTxFrame[256], Rx_data[256], Rx_indx;
 volatile uint8_t txDone = 0;
@@ -110,6 +123,7 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 void taskLed7Seg(void const * argument);
 void taskBlue(void const * argument);
+void co1SekundeTask(void const * argument);
 
 uint8_t rtcSetTime(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef* time);
 uint8_t rtcGetTime(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef* time);
@@ -117,6 +131,9 @@ uint8_t rtcGetTime(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef* time);
 void displayPrzeliczCzas(void);
 void przyciskiRtc(void);
 
+void eepromStart(void);
+void eepromWrite(uint16_t adr, uint16_t value);
+void eepromRead(uint16_t adr, uint16_t* value);
 
 /* USER CODE END FunctionPrototypes */
 
@@ -142,6 +159,8 @@ void vApplicationIdleHook( void ){
 
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
+
+	eepromStart();
 	HAL_UART_Receive_DMA(&huart1, Rx_data, 1);
   /* USER CODE END Init */
 
@@ -171,9 +190,11 @@ void MX_FREERTOS_Init(void) {
   osThreadDef(TaskLed7Seg, taskLed7Seg, osPriorityNormal, 0, 128);
   taskLed7SegHandle = osThreadCreate(osThread(TaskLed7Seg), NULL);
 
-  osThreadDef(Taskblue, taskBlue, osPriorityNormal, 0, 128);
+  osThreadDef(Taskblue, taskBlue, osPriorityNormal, 0, 256);
   blueTaskHandle = osThreadCreate(osThread(Taskblue), NULL);
 
+  osThreadDef(TaskCo1Sekunde, co1SekundeTask, osPriorityNormal, 0, 128);
+  co1sekundeTaskHandle = osThreadCreate(osThread(TaskCo1Sekunde), NULL);
 
 
   /* USER CODE END RTOS_THREADS */
@@ -197,63 +218,63 @@ void StartDefaultTask(void const * argument)
 }
 
 /* USER CODE BEGIN Application */
+void co1SekundeTask(void const * argument){
+	uint32_t PreviousWakeTime = osKernelSysTick();
+
+	for(;;){
+		HAL_ADC_Start_IT(&hadc1); //ADC
+
+		kropka_4^=1;
+
+		if(rtcTimer1Sec) --rtcTimer1Sec;
+
+
+
+
+
+
+		osDelayUntil(&PreviousWakeTime, 1000);
+	}
+}
 
 void taskLed7Seg(void const * argument){
 	uint32_t PreviousWakeTime = osKernelSysTick();
 
-	static uint32_t  konewrt=0, DSerror=0;
+	uint32_t  konewrt=0, DSerror=0;
 	uint8_t  temperaturaLast=0, licznikErr=0, odczyt = 0;
 	uint16_t tempSrednia = 0, tempsredniaTab[5] = {0,0,0,0,0}, indeksSredni=0;
 
 	for(;;){
 
-
-		//czujniki_cnt = search_sensors(); //ilosc ds
-
-
-
-
+		//**************************************************************************************** CZAS GET
 		rtcGetTime(&hrtc, & getTime);
-
 		if (HAL_RTC_GetDate(&hrtc, & getDate, RTC_FORMAT_BIN) != HAL_OK)
 		  {
 		    Error_Handler();
 		  }
-
 		godziny = getTime.Hours;
 		minuty = getTime.Minutes;
 		sekundy = getTime.Seconds;
+		//**************************************************************************************** END
 
-		if (sekundy % 1 == 0 && konewrt == 0 && DS_Reset()) {
 
-			HAL_ADC_Start_IT(&hadc1); //ADC
-
-			DS_Write(0xcc);        // SKIP ROM
-			DS_Write(0x44);       // CONVERT T
-			konewrt = 1;
-		} else if (sekundy % 3 == 0 && DS_Reset()) {
-			konewrt = 0;
-			odczyt = 1;
-			DS_Write(0xcc); // SKIP ROM
-			DS_Write(0xbe); // READ SCRATCHPAD
-			uint8_t j;
-			for (j = 0; j < 2; j++) {
-				dsBuff[j] = DS_Read();
+		if( 0 == (sekundy%3) ) {
+			czujniki_cnt = search_sensors();
+		}
+		if( 1 == (sekundy%3) ){
+			DS18X20_start_meas( DS18X20_POWER_EXTERN, NULL );
+		}
+		if( 2 == (sekundy%3) ) {
+			if( DS18X20_OK == DS18X20_read_meas(gSensorIDs[0], &temperaturaDs[0], &temperaturaDs[1], &temperaturaDs[2] )){
+				odczyt = 1;
 			}
-			DS_Reset();
-
-			DS_tmp = dsBuff[0] | (dsBuff[1] << 8);
-			temperaturaDs[2] = ((dsBuff[0] & 0x0F) * 625) / 1000;
-			// sign temperature
-			temperaturaDs[0] = dsBuff[1] >> 7;
-			if (temperaturaDs[0]) {
-				DS_tmp = ~DS_tmp + 1;
-			}
-			temperaturaDs[1] = ((DS_tmp >> 4) & 0x7f);
 		}
 
+
+
+
 //		temperaturaDs[0] = 1;
-//		temperaturaDs[1] = 0;
+//		temperaturaDs[1] = 52;
 //		temperaturaDs[2] = 1;
 
 
@@ -267,13 +288,24 @@ void taskLed7Seg(void const * argument){
 		cyfra_7 = (DSerror%100) /10;
 		cyfra_8 = (DSerror%100) % 10;
 
-		if ((((temperaturaDs[1] - temperaturaLast) > 1) || ((temperaturaLast - temperaturaDs[1]) > 1)) && (licznikErr < 5) && (odczyt == 1)) {
+		cyfra_7 = (eeIloscOdpalen % 100) / 10;
+		cyfra_8 = (eeIloscOdpalen % 100) % 10;
+
+
+//		if(eeIloscOdpalen > 10){
+//			eeIloscOdpalen = 0;
+//			eepromWrite(VirtAddVarTab[0], eeIloscOdpalen);
+//		}
+
+
+		if (  (( temperaturaDs[1] > temperaturaLast && (temperaturaDs[1] - temperaturaLast) > 1) || ( temperaturaDs[1] > temperaturaLast && (temperaturaLast - temperaturaDs[1]) > 1) ) && (licznikErr < 5) && odczyt == 1 && konewrt ) {
 			odczyt = 0;
 			++licznikErr;
 			kropka_12 = 1;
 			++DSerror;
 
 		} else if (odczyt == 1) {
+			konewrt = 1;
 			odczyt = 0;
 			licznikErr = 0;
 
@@ -293,49 +325,42 @@ void taskLed7Seg(void const * argument){
 			}
 			tempSrednia/=5;
 
+			if ((temperaturaDs[0]) && (tempSrednia  != 0)) { //minus
+				cyfra_9 = MINUS;
+				HAL_GPIO_WritePin(LED_MINUS_GPIO_Port, LED_MINUS_Pin,
+						GPIO_PIN_SET);
 
-			if (temperaturaDs[0]) { //minus
-				if(tempSrednia%10 != 0){
-					cyfra_9 = MINUS;
-					HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-				}else{
-					cyfra_9 = NIC;
-					HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-				}
+				//bez znaku stopni
 				if (tempSrednia > 99) {
 					cyfra_10 = tempSrednia / 100;
-					cyfra_11 = (tempSrednia/10) % 10;
+					cyfra_11 = (tempSrednia / 10) % 10;
+					kropka_11 = 1;
+					cyfra_12 = tempSrednia % 10;
 				} else {
-					cyfra_10 = tempSrednia/10;
+					cyfra_10 = tempSrednia / 10;
 					kropka_10 = 1;
-					cyfra_11 = tempSrednia%10;
+					cyfra_11 = tempSrednia % 10;
+					cyfra_12 = 12;
 				}
+				//PLUS
 			} else {
-				cyfra_9 = tempSrednia/ 100;
+				HAL_GPIO_WritePin(LED_MINUS_GPIO_Port, LED_MINUS_Pin,
+						GPIO_PIN_RESET);
+				cyfra_9 = tempSrednia / 100;
 				if (cyfra_9 == 0) {
 					cyfra_9 = 10;
-					cyfra_10 = tempSrednia/10;
+					cyfra_10 = tempSrednia / 10;
 				} else {
-					cyfra_10 = (tempSrednia/10) % 10;
+					cyfra_10 = (tempSrednia / 10) % 10;
 				}
 				kropka_10 = 1;
-				cyfra_11 = tempSrednia%10;
+				cyfra_11 = tempSrednia % 10;
+				cyfra_12 = 12;
 			}
-			cyfra_12 = 12;
-
-		}
-
-
-		if (sekundy % 2) {
-			kropka_4 = 1;
-		} else {
-			kropka_4 = 0;
 		}
 
 
 		displayPrzeliczCzas();
-		if(rtcTimer1Sec) --rtcTimer1Sec;
-
 		osDelayUntil(&PreviousWakeTime, 1000);
 	}
 }
@@ -537,6 +562,16 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 
 	if (hadc->Instance == ADC1) {
 
+
+		crcWynik = 0;
+		crcbuff[0] = 1;
+		crcbuff[0] = __REV(  crcbuff[0]);
+		uint32_t lenB = 1;
+		crcWynik = HAL_CRC_Calculate(&hcrc, (uint32_t *) crcbuff, lenB);
+		crcWynik =( __REV( crcWynik) )^ 0xFFFFFFFF;
+
+
+
 		ADCread = HAL_ADC_GetValue(hadc);
 		HAL_ADC_Stop_IT(hadc);
 
@@ -595,6 +630,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 		strcat((char*) blueTxFrame, (char*) tmp2);
 		strcat((char*) blueTxFrame, " sciemniacz = ");
 		itoa(sciemniacz, (char*) tmp2, 10);
+		strcat((char*) blueTxFrame, (char*) tmp2);
+		strcat((char*) blueTxFrame, " PowerUp  = ");
+		itoa(eeIloscOdpalen, (char*) tmp2, 10);
 		strcat((char*) blueTxFrame, (char*) tmp2);
 		strcat((char*) blueTxFrame, "\n");
 
@@ -782,8 +820,33 @@ void przyciskiRtc(void){
 	}
 }
 
+void eepromStart(void){
 
+	HAL_FLASH_Unlock();
+	EE_Init();
 
+	uint8_t i;
+	for(i=0;i<NB_OF_VAR; ++i) {
+		EE_ReadVariable(VirtAddVarTab[i], &eepromVarDataTab[i]);
+	}
+	eeIloscOdpalen = eepromVarDataTab[0];
+
+	//licznik powerup
+	++eeIloscOdpalen;
+	eepromWrite(VirtAddVarTab[0], eeIloscOdpalen);
+
+	HAL_FLASH_Lock();
+}
+void eepromWrite(uint16_t adr, uint16_t value){
+	HAL_FLASH_Unlock();
+	EE_WriteVariable(adr, value);
+	HAL_FLASH_Lock();
+}
+void eepromRead(uint16_t adr, uint16_t* value){
+	HAL_FLASH_Unlock();
+	EE_ReadVariable(adr, value);
+	HAL_FLASH_Lock();
+}
 
 /* USER CODE END Application */
 

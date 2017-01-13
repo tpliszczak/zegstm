@@ -5,7 +5,9 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../Src/adc.c \
+../Src/crc.c \
 ../Src/dma.c \
+../Src/eeprom.c \
 ../Src/freertos.c \
 ../Src/gpio.c \
 ../Src/main.c \
@@ -25,7 +27,9 @@ C_SRCS += \
 
 OBJS += \
 ./Src/adc.o \
+./Src/crc.o \
 ./Src/dma.o \
+./Src/eeprom.o \
 ./Src/freertos.o \
 ./Src/gpio.o \
 ./Src/main.o \
@@ -45,7 +49,9 @@ OBJS += \
 
 C_DEPS += \
 ./Src/adc.d \
+./Src/crc.d \
 ./Src/dma.d \
+./Src/eeprom.d \
 ./Src/freertos.d \
 ./Src/gpio.d \
 ./Src/main.d \

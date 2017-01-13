@@ -39,6 +39,7 @@ Src/freertos.o: ../Src/freertos.c \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc_ex.h \
+ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_crc.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h \
@@ -59,7 +60,8 @@ Src/freertos.o: ../Src/freertos.c \
  ../Src/oneWire.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/main.h \
  F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/adc.h \
- ../Src/wyswietlacz7Seg.h
+ ../Src/wyswietlacz7Seg.h ../Src/eeprom.h \
+ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/crc.h
 
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 
@@ -141,6 +143,8 @@ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_H
 
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc_ex.h:
 
+F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_crc.h:
+
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h:
 
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h:
@@ -182,3 +186,7 @@ F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/main.h:
 F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/adc.h:
 
 ../Src/wyswietlacz7Seg.h:
+
+../Src/eeprom.h:
+
+F:/TP-moje\ dokumenty/Programowanie/ST/sw_workspace/zegarStm/Inc/crc.h:

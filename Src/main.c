@@ -45,6 +45,7 @@
 #include "stm32f1xx_hal.h"
 #include "cmsis_os.h"
 #include "adc.h"
+#include "crc.h"
 #include "dma.h"
 #include "rtc.h"
 #include "tim.h"
@@ -115,6 +116,7 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_ADC1_Init();
+  MX_CRC_Init();
 
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim2);
@@ -234,10 +236,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == TIM4) {
 	  __HAL_TIM_SET_COUNTER(&htim2, 0);
 	   uint32_t sciemTmp;
+
 	   if(wyswietlaczIdx <5 ){
 		   sciemTmp = sciemniacz* 4;
 	   }else{
 		   sciemTmp = 0;
+		   if(sciemniacz>50) sciemTmp = 80;
 	   }
 
 	   wyswietlaczIdx = wyswietl7Seg( &wyswietlaCyfrySet);
